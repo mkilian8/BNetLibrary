@@ -100,7 +100,36 @@ class Factor(MetaArray):
 
 #TODO: network-based elimination/hashing - fewer searches
 #seeds a factor and eliminates all vars not in query set by merging with other factors and summing
-def infer(factors,qry=set([])):
+def infer(in_graph, qry):
+    def merge_node_list(nlist):
+        for n in nlist:
+            factor = out_graph.node[n]
+            new_node = cur_factor.multiply(factor)                             #multiply factors
+            cur_factor.sum_out(qry)                                                #sum out factors
+            nx.relabel_nodes(out_graph, {cur_node: new_node}, copy=False)
+
+            #reconnect graph
+            lprev = out_graph.predecessors(n)
+            lnext = out_graph.successors(n)
+            ebunch = zip([new_node]*len(lnext), lnext)
+            ebunch += zip(lprev, [new_node]*len(lprev))
+            out_graph.add_edges_from(ebunch)
+            return new_node
+
+    out_graph = in_graph.copy()
+    cur_node = out_graph.nodes().pop()
+    cur_factor = out_graph.node[cur_node]
+    while True:
+        prev_list = out_graph.predecessors(cur_node)
+        next_list = out_graph.successors(cur_node)
+        if len(prev_list) or len(next_list):
+            cur_node = merge_node_list(prev_list)
+            cur_node = merge_node_list(next_list)
+        else:
+            break
+
+
+    '''
     qry_factors = set([])
     while len(factors):
         factor = random.sample(factors, 1)
@@ -122,13 +151,22 @@ def infer(factors,qry=set([])):
                 break
     factor = Factor.multiply(qry_factors)
     factor.normalize()
+    '''
     pass
 
 
-def reduce_by_evidence(graph, evidence):
-    for var, val in evidence.iteritems():
-        for i in graph.successors(var) + [var]:
-            graph.node[i]['factor'] = graph.node[i]['factor'][var:val]
+def reduce_by_evidence(in_graph, evidence):
+    out_graph = nx.DiGraph()
+    for var in in_graph.nodes():
+        val = evidence[var]
+        for var2 in in_graph.successors(var) + [var]:
+            if out_graph.node.has_key(var2)
+                factor = out_graph.node[var2]['factor']
+            else
+                factor = in_graph.node[var2]['factor']
+            out_graph.add_node(var2, factor=factor[var:val])
+            out_graph.add_edge(var, var2)
+    return out_graph
 
 
 C   =    Factor(np.array([0.5,0.5]), info=[{'name':'C', 'values':['F', 'T']}])
@@ -170,5 +208,5 @@ qry = set(['W'])
 
 
 if __name__ == '__main__':
-    reduce_by_evidence(DG, ev)
-    factors = infer(DG, qry)
+    graph = reduce_by_evidence(DG, ev)
+    graph = infer(graph, qry)
