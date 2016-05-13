@@ -5,7 +5,7 @@
 ## Free for any kind of use.
 
 
-from numpy import ndarray, array, empty, fromstring, arange
+from numpy import ndarray, array, empty, fromstring, arange, copyto
 import types, copy
 
 
@@ -86,10 +86,19 @@ class MetaArray(ndarray):
   def __new__(subtype, data=None, file=None, info=None, dtype=None, copy=False):
     if data is not None:
       if type(data) is types.TupleType:
-        subarr = empty(data, dtype=dtype)
+        subarr = ndarray.__new__(subtype, data, dtype=dtype)  #empty(data, dtype=dtype)
       else:
-        subarr = array(data, dtype=dtype, copy=copy)
-      subarr = subarr.view(subtype)
+        #array(data, dtype=dtype, copy=copy)
+        shape = data.shape
+        if copy == False:
+          #TODO: Fix to take correct view of incompatible data
+          if data.dtype != dtype:
+            raise Exception('Not implemented: Data type of view and referenced data do not match')
+          subarr = ndarray.__new__(subtype, shape, dtype=dtype, buffer=array(data))
+        else:
+          subarr = ndarray.__new__(subtype, shape, dtype=dtype)
+          copyto(subarr, data)
+      #subarr = subarr.view(subtype)
 
       if info is not None:
         try:
@@ -143,8 +152,9 @@ class MetaArray(ndarray):
 
   def __array_finalize__(self,obj):
     # We use the getattr method to set a default if 'obj' doesn't have the 'info' attribute
-    self._info = getattr(obj, 'info', [{}]*(obj.ndim+1))
-    self._infoOwned = False  ## Do not make changes to _info until it is copied at least once
+    if obj is not None:
+      self._info = getattr(obj, 'info', [{}]*(obj.ndim+1))
+      self._infoOwned = False  ## Do not make changes to _info until it is copied at least once
       
     # We could have checked first whether self._info was already defined:
     #if not hasattr(self, 'info'):
@@ -209,6 +219,15 @@ class MetaArray(ndarray):
       ind = (slice(axis, order),)
     return self[tuple(ind)]
   
+  def prepend_axes(self, newshape, refcheck=True, info=None):
+    if not info:
+      info = []
+    if len(info) > len(newshape):
+      raise Exception('Info array is longer than newshape')
+    ndarray.resize(self, self.shape + newshape, refcheck=refcheck)
+    pad = len(newshape) - len(info)
+    self._info = info + [{}] * pad + self._info
+    
   def append(self, val, axis):
     """Return this object with val appended along axis. Does not yet combine meta info."""
     ## make sure _info is copied locally before modifying it!
