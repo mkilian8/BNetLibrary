@@ -22,79 +22,64 @@ class Factor(MetaArray):
         return [ info['name'] for info in self.infoCopy() if info['C'] == True ]
     '''
     
-    def __sub__(self, other):
-        pass
-
-    def __add__(self, other):
-        pass
-
     #TODO:implement variable descriptor object
     def __contains__(self, var):
-        return var in zip(*list(self._variables()))[1]
+        return var in zip(*list(self.variables()))[1]
 
     def __iter__(self):
-        return zip(*list(self._variables()))[1]
+        return zip(*list(self.variables()))[1]
 
 
     #return AXES
-    def get_axes_mappings(var_set=set([]), *factors):
-        #TODO: call indexing method on factor, not implemented yet
-        var_set = list(var_set)
-        this_axes = [i for i,var in self._variables() if var in var_set]
-        other_axes = [factor.get_axes_mappings(var_set)[1] for factor in factors]
-        
-        mappings = [this_axes] + other_axes
+    def get_index_mappings_to(self, factor):
+        var = factor.variables()
+        myvar = self.variables()
+        mappings = []
+        for ax in var.viewkeys() & myvar.viewkeys():
+            mappings.append( (myvar[ax], var[ax]) )
         return mappings
 
-    def get_axes(var_set=set([])):
-        shape = np.shape(self)
-        #axes = [ name, shape[i] for i,name in self._variables if name in var_set ]
-        axes = ''
-        return axes
+    def join(self, factor):
+        #names, shapes = zip(*axes)
+        var = factor.variables()
+        myvar = self.variables()
+        shape = []
+        info = []
+        _info = factor.infoCopy()
+        for ax in var.viewkeys() - myvar.viewkeys():
+            i = var[ax]
+            info.append(_info[i])
+            shape.append(factor.shape[i])
+        old_arr = self.view()
+        self.prepend_axes(tuple(shape), info=info, refcheck=False)
+        it = np.ndindex(*shape)
+        it.ndincr()
+        for i in it:
+            self[i] = old_arr
 
-    def prepend_axes(axes):
-        names, shapes = zip(*axes)
-        self.resize(shape + np.shape(self))
-        self._info[:0] = axes
-
-    def _variables(self):
-        info = self.infoCopy()
-        #set( (i,a for i,a in enumerate([{'name':'a'}, {'name':'b'}, {'name':'b'}])) )
-        enum = (i for i in range(1,10))
-        pdb.set_trace()
-        #return set( (i,a['name'] for i,a in enumerate(info)) )
+    def variables(self):
+        return dict( ((a['name'],i) for i,a in enumerate(self._info) if 'name' in a) )
         
 
-    #TODO: static method implementation
-    @staticmethod
-    def multiply(cls, mergers):
-        factor = random.sample(mergers, 1)
-        for other in mergers:
-            other_vars = set([])
-            merge_vars = set([])
-            for var in other:
-                other_vars.add(var)
-                if var not in factor:
-                    merge_vars.add(var)
-                
-            axes = other.get_axes(merge_vars)
-            factor.prepend_axes(axes)
-            mappings = factor.get_axes_mappings(other_vars, other)
+    def multiply(self, factor):
+        #TODO: refactor to Factor class
+        self.join(factor)
+        pdb.set_trace()
+        mappings = self.get_index_mappings_to(factor)
+        for i,m in np.ndenumerate(factor):
+            #TODO: implement indexing, use mappings bw/ factors axes
+            shp = list(np.index_exp[:] * len(np.shape(self)))
+            for j,k in mappings:
+                shp[j] = i[k]
+            self[tuple(shp)] *= m
     
-            for i,m in np.ndenumerate(other):
-                #TODO: implement indexing, use mappings bw/ factors axes
-                shp = list(np.index_exp[:] * len(np.shape(factor)))
-                for ax in mappings[0]:
-                    shp[ax] = np.shape(factor)[ax]
-                factor[tuple(shp)] *= m
-
-    def normalize():
-        self /= self.sum()
-    
-    '''
     def sum_out(self, var):
         np.sum(self )
         self[var:np.s_[:]]
+
+    '''
+    def normalize():
+        self /= self.sum()
     '''
 
 
@@ -160,30 +145,35 @@ def reduce_by_evidence(in_graph, evidence):
     for var in in_graph.nodes():
         val = evidence[var]
         for var2 in in_graph.successors(var) + [var]:
-            if out_graph.node.has_key(var2)
+            if out_graph.node.has_key(var2):
                 factor = out_graph.node[var2]['factor']
-            else
+            else:
                 factor = in_graph.node[var2]['factor']
             out_graph.add_node(var2, factor=factor[var:val])
             out_graph.add_edge(var, var2)
     return out_graph
 
+def estimate_dirichlet():
+    pass
 
-C   =    Factor(np.array([0.5,0.5]), info=[{'name':'C', 'values':['F', 'T']}])
+def learn_structure():
+    pass
+
+C   =    Factor(np.array([0.5,0.5]), info=[{'name':'C', 'values':['F', 'T']}], copy=True)
 S_C =    Factor(np.array([
                     [0.5, 0.5],
                     [0.9, 0.1]
                 ]), info=[
                     {'name':'C', 'values':['F','T']},
                     {'name':'S', 'values':['F', 'T']}
-                ])
+                ], copy=True)
 R_C =    Factor(np.array([
                     [0.8, 0.2],
                     [0.2, 0.8]
                 ]), info=[
                     {'name':'C', 'values':['F', 'T']},
                     {'name':'R', 'values':['F', 'T']}
-                ])
+                ], copy=True)
 W_SR =   Factor(np.array([
                     [
                         [1.0, 0.0],
@@ -197,7 +187,7 @@ W_SR =   Factor(np.array([
                     {'name':'R', 'values':['F', 'T']},
                     {'name':'S', 'values':['F', 'T']},
                     {'name':'W', 'values':['F', 'T']}
-                ])
+                ], copy=True)
 
 DG = nx.DiGraph()
 DG.add_nodes_from([('C',{'factor':C}), ('S',{'factor':S_C}), ('R',{'factor':R_C}), ('W',{'factor':W_SR})])
