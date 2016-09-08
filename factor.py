@@ -59,6 +59,7 @@ class Factor(MetaArray):
      
     def reduce(self, **evidence):
         #Only possible to reduce by one node at the moment
+        #TODO: Include reduced axes in result array
         var, val = evidence.popitem()
         info = self.infoCopy()
         i = self.axes()[var]
@@ -73,9 +74,9 @@ class Factor(MetaArray):
         log.debug('Conditioning dimensions:\n %s', cDims)
 
         for d in np.ndindex(*cDims):
-            index = tuple( slice(axisLength) if m not in cAxes else d[cAxes.index(m)] for m, axisLength in enumerate(ary.shape)  ) 
-            log.debug('Summing at index: %s', index)
-            ary[index] /= super(Factor, ary[index]).sum()
+            index = tuple( slice(axisLength) if m not in cAxes else d[cAxes.index(m)] for m, axisLength in enumerate(ary.shape)  )
+            log.debug('Summing array\n %s\n at index: %s', ary, index)
+            ary[index] /= np.array(ary[index]).sum()
         return ary
 
     def variables(self):
