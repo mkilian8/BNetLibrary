@@ -3,6 +3,7 @@
 
 def solve(factors, variables, query, **evidence):
     # Reduce by evidence
+    #TODO: Reduce at the end when factors multiplied in
     for i in xrange(len(factors)):
         f  = factors[i]
         ef = { n: evidence[n] for n in f.axes().keys() if evidence.has_key(n) }
