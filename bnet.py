@@ -3,16 +3,21 @@
 
 def solve(factors, variables, query, **evidence):
     # Reduce by evidence
+    for i in xrange(len(factors)):
+        f  = factors[i]
+        ef = { n: evidence[n] for n in f.axes().keys() if evidence.has_key(n) }
+        if len(ef):
+            f[i] = f.reduce(**ef)
     # Eliminate vars
-    result = None
     for z in variables:
         if z in query:
             continue
         joint = None
         for i in xrange(len(factors)):
             f = factors[i]
-            if f.variables().has_key(z):
-                joint = joint * f if joint else f 
-                del factors[i]
-        result = joint.sum(z)
-        factors.push(result)
+            if f.axes().has_key(z):
+                joint = joint * f if joint is not None else f 
+                factors[i] = None
+        factors.append(joint.sum(z))
+        factors = filter(lambda f: f is not None, factors)
+    return factors

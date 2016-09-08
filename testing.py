@@ -1,7 +1,7 @@
 from loggers import log
-import bngraph as bn
-import numpy as np
 from factor import Factor
+from bnet import solve
+import numpy as np
 
 '''
 c
@@ -56,10 +56,10 @@ D = Factor(np.array([
     ])
 
 if __name__ == '__main__':
-    log.setLevel('DEBUG')
-    pgm = bn.BnetGraph()
-    pgm.add_nodes_from([A,B])
-    pgm.add_edges_from([('A','B')])
+    log.setLevel('INFO')
+    #pgm = bn.BnetGraph()
+    #pgm.add_nodes_from([A,B])
+    #pgm.add_edges_from([('A','B')])
     ED = E * D
     print 'ED: ', ED
     #import pdb; pdb.set_trace()
@@ -71,6 +71,9 @@ if __name__ == '__main__':
     print 'ABED multiplied', ABED_sum
     ABED_reduce = ABED_sum.reduce(B='F')
     print 'ABED reduced factor', ABED_reduce
+
+    rv = solve([A,B,C,D,E], 'ABCDE', 'E')
+    print 'Result: ', rv
     import pdb; pdb.set_trace()
     pass
 
