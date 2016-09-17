@@ -1,6 +1,6 @@
 
 
-
+# Supports single variable queries, potentially with query for result value
 def solve(factors, variables, query, **evidence):
     # Reduce by evidence
     for z in variables:
@@ -19,4 +19,10 @@ def solve(factors, variables, query, **evidence):
             joint = joint.sum(z)
         factors.append(joint)
         factors = filter(lambda f: f is not None, factors)
-    return factors
+    result = reduce(lambda c, f: c * f, factors[1:], factors[0])
+    if '=' in query:
+        q = query.split('=')
+        varIndex = result.axes()[q[0]]
+        valIndex = list(result.infoCopy()[varIndex]['values']).index(q[1])
+        return result[q[0]:valIndex]
+    return result
