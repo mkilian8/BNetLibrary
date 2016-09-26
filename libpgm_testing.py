@@ -21,7 +21,7 @@ fn = TableCPDFactorization(bn)
 
 
 # sample 
-result = fn.specificquery(dict(D='T'), dict(E='T'))
+result = fn.specificquery(dict(C='T'), dict(B='F'))
 
 # output
 print json.dumps(result, indent=2)

@@ -21,7 +21,7 @@ if __name__ == '__main__':
     ABED_reduce = ABED_sum.reduce(B='F')
     print 'ABED reduced factor', ABED_reduce
 
-    rv = solve([A,B,C,D,E], 'ABCDE', 'D=T', E='F')
+    rv = solve([A,B,C,D,E], 'ABCDE', 'C=T', B='F')
     print 'Result: ', rv
     import pdb; pdb.set_trace()
     pass
